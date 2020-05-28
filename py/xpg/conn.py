@@ -1,12 +1,16 @@
-# import psycopg2
+import psycopg2
 import os
-import pg8000
+# import pg8000
 
 class Conn:
     def __init__(self, user=None, host='localhost', port=5432, database=None, password=None):
         if user is None:
             user = os.environ['USER']
-        self.conn = pg8000.connect(user, host=host, port=port, database=database, password=password) 
+        if database is None:
+            database = user
+        # self.conn = pg8000.connect(user, host=host, port=port, database=database, password=password) 
+        constr = "dbname='{0}' user='{1}'".format(database, user)
+        self.conn = psycopg2.connect(constr)
         self.nexttmp = 0
         # autocommit set to true by default.
         self.conn.autocommit = True
@@ -30,7 +34,8 @@ class Conn:
     def execute(self, sql):
         cur = self.conn.cursor()
         cur.execute(sql) 
-        cols = [k[0].decode('ascii') for k in cur.description]
+        # cols = [k[0].decode('ascii') for k in cur.description]
+        cols = [k[0] for k in cur.description]
         rows = []
         while True:
             row = cur.fetchone()
