@@ -1,16 +1,11 @@
 $FOREIGN_ALIASES_SUPPRESS_SKIP_MESSAGE = True
-#
-# XONSH WIZARD START
-source-bash "echo loading xonsh foreign shell"
-xontrib load apt_tabcomplete 
-# kitty mpl powerline2
-# XONSH WIZARD END
 
 import xpg.conn
 import xpg.xtable
 
 xpg_db = None
 
+# Connect to database, with [username,dbname]
 def _sqlconn(args):
 	global xpg_db
 	if xpg_db != None:
@@ -22,6 +17,7 @@ def _sqlconn(args):
 	else:
 		xpg_db = xpg.conn.Conn(args[0], database=args[1])
 
+# Run sql, print result table.
 def _sql(args): 
 	global xpg_db
 	if xpg_db == None:
@@ -30,12 +26,14 @@ def _sql(args):
 	tt = xpg.xtable.fromSQL(xpg_db, args[0])
 	return tt.show(tablefmt='simple') + '\n'
 
+# Run sql and do not care about result
 def _sqlexec(args): 
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
 	xpg_db.execute_only(args[0])
 
+# Build a xtable (client side view)
 def _pgxt(args): 
 	global xpg_db
 	if xpg_db == None:
