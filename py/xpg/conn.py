@@ -9,7 +9,7 @@ class Conn:
         self.conn = pg8000.connect(user, host=host, port=port, database=database, password=password) 
         self.nexttmp = 0
         # autocommit set to true by default.
-        # self.conn.autocommit = True
+        self.conn.autocommit = True
         self.xts = {}
    
     def rmxt(self, xt):
@@ -31,7 +31,12 @@ class Conn:
         cur = self.conn.cursor()
         cur.execute(sql) 
         cols = [k[0].decode('ascii') for k in cur.description]
-        rows = cur.fetchall()
+        rows = []
+        while True:
+            row = cur.fetchone()
+            if row == None:
+                break
+            rows.append(row)
         cur.close()
         self.conn.commit()
         return cols, rows
