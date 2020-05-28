@@ -1,5 +1,4 @@
-Postgresql Xonsh Python Tools
-==============================
+# Postgresql Xonsh Python Tools
 
 A bunch of scritps to use postgresql in xonsh.  Install 
 as usual
@@ -8,6 +7,7 @@ python3 setup.py install --user
 ```
 
 ## Usage
+
 Start xonsh, load the macros in xonshrc.   If user not doing
 anyting, xpg will connection to the default database as default
 user -- most likely this means $USER.   
