@@ -1,3 +1,5 @@
+$FOREIGN_ALIASES_SUPPRESS_SKIP_MESSAGE = True
+#
 # XONSH WIZARD START
 source-bash "echo loading xonsh foreign shell"
 xontrib load apt_tabcomplete 
@@ -20,13 +22,13 @@ def _sqlconn(args):
 	else:
 		xpg_db = xpg.conn.Conn(args[0], database=args[1])
 
-def _sql(args, stdin=None, stdout=None):
+def _sql(args): 
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
 
 	tt = xpg.xtable.fromSQL(xpg_db, args[0])
-	stdout.write(tt.show())
+	return tt.show(tablefmt='simple') + '\n'
 
 def _sqlexec(args): 
 	global xpg_db
@@ -34,7 +36,7 @@ def _sqlexec(args):
 		xpg_db = xpg.conn.Conn()
 	xpg_db.execute_only(args[0])
 
-def _pgxt(args, stdin=None, stdout=None):
+def _pgxt(args): 
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
@@ -46,21 +48,19 @@ def _pgxt(args, stdin=None, stdout=None):
 	if xtn[0] == '-':
 		xpg_db.rmxt(xtn[1:])
 	elif xpg_db.getxt(xtn) != None:
-		# this is the show result case.
-		stdout.write(xpg_db.getxt(xtn).show()) 
+		# print case.
+		return xpg_db.getxt(xtn).show(tablefmt='simple') + '\n'
 	else:
 		if xtn[0] == '+':
 			xtn = xtn[1:]
 		qry = args[1]
 		xpg.xtable.fromQuery(xpg_db, qry, alias=xtn)
-		# stdout.write("Create XT " + xtn + " from qry: " + qry)
-		# stdout.write("XT Resolved to " + xpg_db.getxt(xtn).sql) 
 
 import matplotlib.pyplot as plt
 from xonsh.tools import unthreadable
 
 @unthreadable
-def _pgxtplot(args, stdin=None, stdout=None):
+def _pgxtplot(args): 
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
@@ -84,10 +84,24 @@ def _pgxtplot(args, stdin=None, stdout=None):
 	plt.savefig('/tmp/xonsh.kitty.plt.png')
 	icat /tmp/xonsh.kitty.plt.png
 
+@unthreadable
+def _pgxtexp(args): 
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	xtn = args[0]
+	xt = xpg_db.getxt(xtn)
+	if len(args) == 2 and args[1] == 'analyze':
+		exp = xt.dotplan('/tmp/xonsh.kitty.plt', analyze=True)
+	else:
+		exp = xt.dotplan('/tmp/xonsh.kitty.plt')
+	icat /tmp/xonsh.kitty.plt.png
 	
 aliases['pgconn'] = _sqlconn
 aliases['sql'] = _sql
 aliases['sqlexec'] = _sqlexec
 aliases['pgxt'] = _pgxt 
 aliases['pgxtplot'] = _pgxtplot
+aliases['pgxtexp'] = _pgxtexp
 

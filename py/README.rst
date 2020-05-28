@@ -44,4 +44,7 @@ your favorite image viewer.
 pgxtplot line zoo    # plot zoo, each column will be a line, x axias is [0-n)
 pgxtplot xline zoo   # plot zoo, first column as x axis. 
 pgxtplot pie zoo     # pie chart, first column is category, second is weight.
+pgxtexp zoo          # explain
+pgxtexp zoo analyze  # explain analyze
+
 ```
