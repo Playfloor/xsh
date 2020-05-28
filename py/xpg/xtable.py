@@ -6,7 +6,7 @@ class XCol:
         self.type = t
 
 class XTable:
-    def __init__(self, c, origsql="", alias="", inputs=None):
+    def __init__(self, c, origsql="", alias=""): 
         self.conn = c
         self.origsql = origsql
         self.sql = None 
@@ -14,18 +14,14 @@ class XTable:
             self.alias = c.next_tmpname()
         else:
             self.alias = alias 
-        self.inputs = inputs
-
-    def coldef(self, idx):
-        return self.schema[idx]
+        self.inputs = {}
 
     # resolve a column.  
-    # #x.y# where x is a number, y is colname -> tablealias.colname
+    # @x.y@ where x is a number, y is colname -> tablealias.colname
     def resolve_col(self, s):
-        strs = s.split('#')
+        strs = s.split('@')
         rs = []
         i = 0
-
         while i < len(strs):
             rs.append(strs[i])
             i += 1 
@@ -34,32 +30,25 @@ class XTable:
                 break
 
             if strs[i] == '':
-                rs.append('#')
+                rs.append('@')
             else:
+                # record alias table.
                 xy = strs[i].split('.')
-                if len(xy) == 1:
-                    idx = int(xy[0])
-                    rs.append(self.inputs[idx].alias)
-                elif len(xy) == 2:
-                    idx = int(xy[0])
-                    tab = self.inputs[idx].alias
-                    col = xy[1]
-                    rs.append(tab + "." + col)
-                else:
-                    raise ValueError("sql place holder must be #x# or #x.y#")
+                self.inputs[xy[0]] = 1
+                rs.append(strs[i])
             i += 1 
+        print(rs)
         return "".join(rs)
 
     def build_sql(self): 
         if self.sql != None:
             return
-
         rsql = self.resolve_col(self.origsql)
         if self.inputs == None or len(self.inputs) == 0:
             self.sql = rsql
         else:
             self.sql = "WITH "
-            self.sql += ",\n".join([t.alias + " as (" + t.sql + ")" for t in self.inputs])
+            self.sql += ",\n".join([xtn + " as (" + self.conn.getxt(xtn).sql + ")" for xtn in self.inputs])
             self.sql += "\n"
             self.sql += rsql
 
@@ -89,7 +78,9 @@ class XTable:
         if nlimit > 1:
             raise ValueError("SQL Select can have at most one limit/sample clause")
 
-        ret = XTable(self.conn, sql, alias, inputs=[self])
+        ret = XTable(self.conn, sql, alias) 
+        ret.build_sql()
+        self.conn.xts[ret.alias] = ret 
         return ret
 
     def cursor(self):
@@ -121,27 +112,32 @@ class XTable:
         return tabulate.tabulate(res, cols, tablefmt)
 
 
-def fromQuery(conn, qry, alias="", inputs=None):
-    xt = XTable(conn, qry, alias, inputs)
+def fromQuery(conn, qry, alias=""):
+    xt = XTable(conn, qry, alias) 
+    xt.build_sql()
+    conn.xts[xt.alias] = xt
     return xt
 
 def fromSQL(conn, sql, alias=""):
-    xt = XTable(conn, sql, alias, None) 
+    xt = XTable(conn, sql, alias) 
     xt.sql = xt.origsql
+    conn.xts[xt.alias] = xt
     return xt
 
 def fromTable(conn, tn, alias=""):
+    if alias == "":
+        alias = tn
     return fromSQL(conn, "select * from " + tn, alias)
 
 if __name__ == '__main__':
     import xpg.conn
     c1 = xpg.conn.Conn("ftian", database="ftian") 
     t1 = fromTable(c1, "t")
-    t2 = fromSQL(c1, "select i from generate_series(1, 10) i")
-    t3 = fromQuery(c1, "select j from #0# limit 10", inputs = [t1])
+    t2 = fromSQL(c1, "select i from generate_series(1, 10) i", alias="t2")
+    t3 = fromQuery(c1, "select j from @t@ limit 10", alias="t3") 
 
     print(t2.show())
     print(t3.show())
 
-    t4 = fromQuery(c1, "select * from #0#, #1# where #0.i# = #1.j#", inputs=[t2, t3])
+    t4 = fromQuery(c1, "select * from @t2@, @t3@ where @t2.i@ = @t3.j@") 
     print(t4.show())

@@ -10,7 +10,14 @@ class Conn:
         self.nexttmp = 0
         # autocommit set to true by default.
         self.conn.autocommit = True
+        self.xts = {}
    
+    def rmxt(self, xt):
+        del self.xts[xt]
+
+    def getxt(self, xt):
+        return self.xts[xt]
+
     def close(self):
         self.conn.close()
 
