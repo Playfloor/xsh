@@ -16,7 +16,9 @@ class Conn:
         del self.xts[xt]
 
     def getxt(self, xt):
-        return self.xts[xt]
+        if xt in self.xts:
+            return self.xts[xt]
+        return None
 
     def close(self):
         self.conn.close()
