@@ -1,0 +1,93 @@
+# XONSH WIZARD START
+source-bash "echo loading xonsh foreign shell"
+xontrib load apt_tabcomplete 
+# kitty mpl powerline2
+# XONSH WIZARD END
+
+import xpg.conn
+import xpg.xtable
+
+xpg_db = None
+
+def _sqlconn(args):
+	global xpg_db
+	if xpg_db != None:
+		xpg_db = None
+	if len(args) == 0:
+		xpg_db = xpg.conn.Conn()
+	elif len(args) == 1:
+		xpg_db = xpg.conn.Conn(database=args[0])
+	else:
+		xpg_db = xpg.conn.Conn(args[0], database=args[1])
+
+def _sql(args, stdin=None, stdout=None):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	tt = xpg.xtable.fromSQL(xpg_db, args[0])
+	stdout.write(tt.show())
+
+def _sqlexec(args): 
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+	xpg_db.execute_only(args[0])
+
+def _pgxt(args, stdin=None, stdout=None):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	if len(args) == 0:
+		raise Exception("pgxt: too few args.")
+
+	xtn = args[0]
+	if xtn[0] == '-':
+		xpg_db.rmxt(xtn[1:])
+	elif xpg_db.getxt(xtn) != None:
+		# this is the show result case.
+		stdout.write(xpg_db.getxt(xtn).show()) 
+	else:
+		if xtn[0] == '+':
+			xtn = xtn[1:]
+		qry = args[1]
+		xpg.xtable.fromQuery(xpg_db, qry, alias=xtn)
+		# stdout.write("Create XT " + xtn + " from qry: " + qry)
+		# stdout.write("XT Resolved to " + xpg_db.getxt(xtn).sql) 
+
+import matplotlib.pyplot as plt
+from xonsh.tools import unthreadable
+
+@unthreadable
+def _pgxtplot(args, stdin=None, stdout=None):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	mthd = args[0]
+	xtn = args[1]
+
+	if len(args) != 2:
+		raise Exception('pgxtplot method xtablename')
+
+	xt = xpg_db.getxt(xtn)
+	if mthd == 'line':
+		xt.linechart()
+	elif mthd == 'xline':
+		xt.xlinechart()
+	elif mthd == 'pie':
+		xt.piechart()
+	else:
+		raise Exception('pgxtplot does not support', mthd, 'method')
+
+	plt.savefig('/tmp/xonsh.kitty.plt.png')
+	icat /tmp/xonsh.kitty.plt.png
+
+	
+aliases['pgconn'] = _sqlconn
+aliases['sql'] = _sql
+aliases['sqlexec'] = _sqlexec
+aliases['pgxt'] = _pgxt 
+aliases['pgxtplot'] = _pgxtplot
+
