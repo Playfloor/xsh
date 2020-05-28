@@ -93,6 +93,26 @@ class XTable:
         self.build_sql()
         return self.conn.execute(self.sql) 
 
+    def explain(self, analyze=False, format='json'):
+        self.build_sql()
+        opt = ''
+        if format == 'json': 
+            if analyze:
+                opt = '(format json, analyze)'
+            else:
+                opt = '(format json)' 
+        else:
+            if analyze:
+                opt = '(analyze)' 
+        expsql = 'explain {0} {1}'.format(opt, self.sql)
+        cols, rows = self.conn.execute(expsql)
+        return rows[0][0]
+
+    def dotplan(self, fn, analyze=False):
+        exp = self.explain(analyze=analyze)
+        dp = xpg.xtplot.DotPlan(exp)
+        dp.render(fn)
+
     def ctas(self, tablename, distributed_by=None):
         sql = "create table {0} as {1}".format(tablename, self.sql) 
         if distributed_by != None:
@@ -163,15 +183,16 @@ if __name__ == '__main__':
     t2 = fromSQL(c1, "select i from generate_series(1, 10) i", alias="t2")
     t3 = fromQuery(c1, "select j from @t@ limit 10", alias="t3") 
 
-    print(t2.show())
-    print(t3.show())
+    # print(t2.show())
+    # print(t3.show())
 
     t4 = fromQuery(c1, "select * from @t2@, @t3@ where @t2.i@ = @t3.j@") 
-    print(t4.show())
+    t4.dotplan("/tmp/exp")
+    t4.dotplan("/tmp/expa", analyze=True)
 
-    t5 = t1.select(select='i, j')
-    t5.xlinechart()
-    plt.show()
+    # t5 = t1.select(select='i, j')
+    # t5.xlinechart()
+    # plt.show()
 
     # t6 = fromQuery(c1, "select 'i', sum(i) from @t@ union all select 'j', sum(j) from @t@")
     # print(t6.show())

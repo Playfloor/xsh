@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from graphviz import Digraph
 
 class SeriesAccumulator:
     def __init__(self): 
@@ -61,4 +62,56 @@ class LineChart:
             legend.append(series)
         self.ax.legend(legend)
         self.fig.canvas.draw()
+
+
+class DotPlan: 
+    def __init__(self, plan):
+        self.plan = plan[0]['Plan']
+        self.g = Digraph(format='png')
+        self.cnt = 0
+        self.build(self.plan)
+
+    def nodeToStr(self, n): 
+        # print (n)
+        txt = n["Node Type"] 
+        if "Relation Name" in n:
+            txt += "\nRelation: " + n["Relation Name"]
+        if "Alias" in n:
+            txt += " (" + n["Alias"] + ")"
+        if "Plan Rows" in n:
+            txt += "\nPlan rows: " + str(n["Plan Rows"])
+        if "Actual Rows" in n:
+            txt += " Actual rows: " + str(n["Actual Rows"])
+        return txt
+
+    def build(self, n):
+        nid = self.cnt
+        self.cnt += 1
+
+        self.g.node(str(nid), self.nodeToStr(n))
+        if "Plans" in n:
+            for c in n["Plans"]:
+                cid = self.build(c)
+                self.g.edge(str(nid), str(cid))
+        return nid
+
+    def dump(self):
+        return self.g.source
+
+    def render(self, fn):
+        self.g.render(fn)
+
+if __name__ == '__main__':
+    import xpg.conn
+    import xpg.xtable
+
+    c1 = xpg.conn.Conn("ftian", database="ftian") 
+    xt = xpg.xtable.fromQuery(c1, 'select count(*) from t t1, t t2 where t1.i = t2.j')
+    exp = xt.explain()
+    dp = DotPlan(exp)
+
+    print(dp.dump())
+    dp.render("/tmp/exp")
+
+    
 
