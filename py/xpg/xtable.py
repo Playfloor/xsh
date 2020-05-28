@@ -1,4 +1,6 @@
 import tabulate
+import xpg.xtplot
+import matplotlib.pyplot as plt
 
 class XCol:
     def __init__(self, n, t):
@@ -37,7 +39,7 @@ class XTable:
                 self.inputs[xy[0]] = 1
                 rs.append(strs[i])
             i += 1 
-        print(rs)
+        # print(rs)
         return "".join(rs)
 
     def build_sql(self): 
@@ -55,9 +57,9 @@ class XTable:
     def select(self, alias='', select=None, where=None, limit=None, samplerows=None, samplepercent=None): 
         sql = '' 
         if select == None:
-            sql = 'select * from #0#'
+            sql = 'select * from @{0}@'.format(self.alias) 
         else:
-            sql = 'select {0} from #0#'.format(select)
+            sql = 'select {0} from @{1}@'.format(select, self.alias)
 
         if where != None:
             sql = sql + " where " + where
@@ -111,6 +113,31 @@ class XTable:
         cols, res = self.execute()
         return tabulate.tabulate(res, cols, tablefmt)
 
+    def linechart(self, xlabel='x', ylabel='y'):
+        cols, rows = self.execute()
+        lc = xpg.xtplot.LineChart(xlabel, ylabel)
+        for row in rows:
+            for c in range(len(cols)):
+                lc.add(cols[c], row[c])
+        lc.draw()
+
+    def xlinechart(self, xlabel='x', ylabel='y'):
+        cols, rows = self.execute()
+        lc = xpg.xtplot.LineChart(xlabel, ylabel)
+        for row in rows:
+            lc.addx(row[0])
+            for c in range(1, len(cols)):
+                # print("adding ", cols[c], row[c])
+                lc.add(cols[c], row[c])
+        lc.draw()
+
+    def piechart(self):
+        _, rows = self.execute()
+        lbls = [r[0] for r in rows]
+        vals = [r[1] for r in rows]
+        pc = xpg.xtplot.PieChart(vals, labels=lbls)
+        pc.draw()
+
 
 def fromQuery(conn, qry, alias=""):
     xt = XTable(conn, qry, alias) 
@@ -141,3 +168,12 @@ if __name__ == '__main__':
 
     t4 = fromQuery(c1, "select * from @t2@, @t3@ where @t2.i@ = @t3.j@") 
     print(t4.show())
+
+    t5 = t1.select(select='i, j')
+    t5.xlinechart()
+    plt.show()
+
+    # t6 = fromQuery(c1, "select 'i', sum(i) from @t@ union all select 'j', sum(j) from @t@")
+    # print(t6.show())
+    # t6.piechart()
+

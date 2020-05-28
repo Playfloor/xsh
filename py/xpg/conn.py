@@ -9,7 +9,7 @@ class Conn:
         self.conn = pg8000.connect(user, host=host, port=port, database=database, password=password) 
         self.nexttmp = 0
         # autocommit set to true by default.
-        self.conn.autocommit = True
+        # self.conn.autocommit = True
         self.xts = {}
    
     def rmxt(self, xt):
@@ -46,4 +46,8 @@ class Conn:
         cur = self.conn.cursor()
         cur.execute(sql) 
         return cur
+
+    def close_cursor(self, cur):
+        cur.close()
+        self.conn.commit()
 
