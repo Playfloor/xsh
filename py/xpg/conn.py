@@ -21,10 +21,11 @@ class Conn:
     def execute(self, sql):
         cur = self.conn.cursor()
         cur.execute(sql) 
+        cols = [k[0].decode('ascii') for k in cur.description]
         rows = cur.fetchall()
         cur.close()
         self.conn.commit()
-        return rows
+        return cols, rows
 
     def execute_only(self, sql):
         cur = self.conn.cursor()
