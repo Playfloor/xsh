@@ -24,7 +24,7 @@ def _sql(args):
 		xpg_db = xpg.conn.Conn()
 
 	tt = xpg.xtable.fromSQL(xpg_db, args[0])
-	return tt.show(tablefmt='simple') + '\n'
+	return tt.show(tablefmt='psql') + '\n'
 
 # Run sql and do not care about result
 def _sqlexec(args): 
@@ -47,7 +47,7 @@ def _pgxt(args):
 		xpg_db.rmxt(xtn[1:])
 	elif xpg_db.getxt(xtn) != None:
 		# print case.
-		return xpg_db.getxt(xtn).show(tablefmt='simple') + '\n'
+		return xpg_db.getxt(xtn).show(tablefmt='psql') + '\n'
 	else:
 		if xtn[0] == '+':
 			xtn = xtn[1:]
