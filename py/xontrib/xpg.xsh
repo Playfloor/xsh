@@ -2,6 +2,7 @@ $FOREIGN_ALIASES_SUPPRESS_SKIP_MESSAGE = True
 
 import xpg.conn
 import xpg.xtable
+import tabulate
 
 xpg_db = None
 
@@ -17,11 +18,16 @@ def _sqlconn(args):
 	else:
 		xpg_db = xpg.conn.Conn(args[0], database=args[1])
 
-def tblfmt():
-	if 'XPG_TBLFMT' in ${...}:
-		return $XPG_TBLFMT
-	else:
-		return 'psql'
+# A few env variable controls how the table is printed.
+# see tabulate doc.
+def xt2str(tt):
+	cols, res = tt.execute()
+	tblfmt = ${...}.get('XPG_TBLFMT', 'psql')
+	stralign = ${...}.get('XPG_STRALIGN', 'left')
+	numalign = ${...}.get('XPG_NUMALIGN', 'decimal')
+	xts = tabulate.tabulate(res, cols, tablefmt=tblfmt, stralign=stralign, numalign=numalign)
+	# Adding EOL so that we can pipe result to wc
+	return xts + '\n'
 
 # Run sql, print result table.
 def _sql(args): 
@@ -29,7 +35,7 @@ def _sql(args):
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
 	tt = xpg.xtable.fromSQL(xpg_db, args[0])
-	return tt.show(tablefmt=tblfmt()) + '\n'
+	return xt2str(tt)
 
 # Run sql and do not care about result
 def _sqlexec(args): 
@@ -52,7 +58,7 @@ def _pgxt(args):
 		xpg_db.rmxt(xtn[1:])
 	elif xpg_db.getxt(xtn) != None:
 		# print case.
-		return xpg_db.getxt(xtn).show(tablefmt=tblfmt()) + '\n'
+		return xt2str(xpg_db.getxt(xtn)) 
 	else:
 		if xtn[0] == '+':
 			xtn = xtn[1:]
