@@ -17,14 +17,19 @@ def _sqlconn(args):
 	else:
 		xpg_db = xpg.conn.Conn(args[0], database=args[1])
 
+def tblfmt():
+	if 'XPG_TBLFMT' in ${...}:
+		return $XPG_TBLFMT
+	else:
+		return 'psql'
+
 # Run sql, print result table.
 def _sql(args): 
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
-
 	tt = xpg.xtable.fromSQL(xpg_db, args[0])
-	return tt.show(tablefmt='psql') + '\n'
+	return tt.show(tablefmt=tblfmt()) + '\n'
 
 # Run sql and do not care about result
 def _sqlexec(args): 
@@ -47,7 +52,7 @@ def _pgxt(args):
 		xpg_db.rmxt(xtn[1:])
 	elif xpg_db.getxt(xtn) != None:
 		# print case.
-		return xpg_db.getxt(xtn).show(tablefmt='psql') + '\n'
+		return xpg_db.getxt(xtn).show(tablefmt=tblfmt()) + '\n'
 	else:
 		if xtn[0] == '+':
 			xtn = xtn[1:]
