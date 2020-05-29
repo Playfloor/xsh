@@ -52,12 +52,12 @@ class Conn:
         cur.close()
         self.conn.commit()
 
-    def cursor(self, sql):
+    def cursor(self, sql=None):
         cur = self.conn.cursor()
-        cur.execute(sql) 
+        if sql is not None:
+            cur.execute(sql) 
         return cur
 
     def close_cursor(self, cur):
         cur.close()
         self.conn.commit()
-

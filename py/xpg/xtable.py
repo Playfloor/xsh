@@ -176,6 +176,20 @@ def fromTable(conn, tn, alias=""):
         alias = tn
     return fromSQL(conn, "select * from " + tn, alias)
 
+def fromArray(conn, tups, alias="", colnames = None):
+    if tups is None or len(tups) == 0:
+        raise Exception("xtable from python array must have at least one row.")
+    cur = conn.cursor()
+    mstr = '(' + ','.join(['%s' for r in tups[0]]) + ')'
+    vstr = 'VALUES ' + ','.join([cur.mogrify(mstr, row).decode('utf-8') for row in tups])
+    conn.close_cursor(cur)
+    if colnames is None:
+        return fromSQL(conn, vstr, alias=alias) 
+    else:
+        vt = fromSQL(conn, vstr)
+        sel = ','.join(['column' + str(i+1) + ' as ' + colnames[i] for i in range(len(colnames))])
+        return vt.select(alias=alias, select=sel)
+
 if __name__ == '__main__':
     import xpg.conn
     c1 = xpg.conn.Conn("ftian", database="ftian") 
@@ -189,6 +203,12 @@ if __name__ == '__main__':
     t4 = fromQuery(c1, "select * from @t2@, @t3@ where @t2.i@ = @t3.j@") 
     t4.dotplan("/tmp/exp")
     t4.dotplan("/tmp/expa", analyze=True)
+
+    tups = [(1, 2, 'ok'), (3, 4, 'ok2')]
+    t5 = fromArray(c1, tups) 
+    print(t5.show())
+    t6 = fromArray(c1, tups, alias='tups', colnames=['i', 'j', 'k'])
+    print(t6.show())
 
     # t5 = t1.select(select='i, j')
     # t5.xlinechart()

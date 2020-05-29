@@ -65,6 +65,22 @@ def _pgxt(args):
 		qry = args[1]
 		xpg.xtable.fromQuery(xpg_db, qry, alias=xtn)
 
+# Build a xtable from python list of tuples.
+def _pgxtups(args):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	if len(args) != 2:
+		raise Exception("pgxtups: too few args.")
+	
+	xtn = args[0]
+	# string -- almost for sure it comes from macro, let eval.
+	tups = args[1]
+	if type(tups) == str:
+		tups = eval(tups)
+	xpg.xtable.fromArray(xpg_db, tups, alias=xtn)
+
 import matplotlib.pyplot as plt
 from xonsh.tools import unthreadable
 
@@ -111,6 +127,8 @@ aliases['pgconn'] = _sqlconn
 aliases['sql'] = _sql
 aliases['sqlexec'] = _sqlexec
 aliases['pgxt'] = _pgxt 
+aliases['pgxtups'] = _pgxtups
 aliases['pgxtplot'] = _pgxtplot
 aliases['pgxtexp'] = _pgxtexp
+
 
