@@ -32,7 +32,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='xpg', # Required
+    name='xontrib-xpg', # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -55,6 +55,7 @@ setup(
     #
     # This field corresponds to the "Description" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#description-optional
+    long_description_content_type='text/markdown',
     long_description=long_description,  # Optional
 
     # This should be a valid link to your project's main homepage.
