@@ -66,7 +66,7 @@ def _pgxt(args):
 		xpg.xtable.fromQuery(xpg_db, qry, alias=xtn)
 
 # Build a xtable from python list of tuples.
-def _pgxtups(args):
+def _pgxtups(args, stdin=None, stdout=None, stderr=None, spec=None, stack=None):
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
@@ -78,7 +78,10 @@ def _pgxtups(args):
 	# string -- almost for sure it comes from macro, let eval.
 	tups = args[1]
 	if type(tups) == str:
-		tups = eval(tups)
+		for frame_info in stack:
+			frame = frame_info[0]
+			tups = eval(tups, frame.f_globals, frame.f_locals)
+			break
 	xpg.xtable.fromArray(xpg_db, tups, alias=xtn)
 
 import matplotlib.pyplot as plt
