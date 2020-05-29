@@ -34,8 +34,18 @@ def _sql(args):
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
-	tt = xpg.xtable.fromSQL(xpg_db, args[0])
+	tt = xpg.xtable.fromQuery(xpg_db, args[0])
 	return xt2str(tt)
+
+# Run sql, return cols and result.   This function should almost
+# for sure, not be used in subproc or macro, therefore we do not
+# alias it.
+def xpg_sql(args):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+	tt = xpg.xtable.fromQuery(xpg_db, args[0])
+	return tt.execute()
 
 # Run sql and do not care about result
 def _sqlexec(args): 
