@@ -54,7 +54,7 @@ class XTable:
             self.sql += "\n"
             self.sql += rsql
 
-    def select(self, alias='', select=None, where=None, limit=None, samplerows=None, samplepercent=None): 
+    def select(self, alias='', select=None, where=None, limit=None, offset=None): 
         sql = '' 
         if select == None:
             sql = 'select * from @{0}@'.format(self.alias) 
@@ -64,21 +64,11 @@ class XTable:
         if where != None:
             sql = sql + " where " + where
 
-        nlimit = 0
         if limit != None:
-            nlimit += 1
             sql = sql + " limit {0}".format(limit)
 
-        if samplerows != None:
-            nlimit += 1
-            sql = sql + " limit sample {0} rows".format(samplerows)
-
-        if samplepercent != None:
-            nlimit += 1
-            sql = sql + " limit sample {0} percent".format(samplepercent)
-
-        if nlimit > 1:
-            raise ValueError("SQL Select can have at most one limit/sample clause")
+        if offset != None:
+            sql = sql + " offset {0}".format(offset) 
 
         ret = XTable(self.conn, sql, alias) 
         ret.build_sql()
@@ -158,6 +148,15 @@ class XTable:
         pc = xpg.xtplot.PieChart(vals, labels=lbls)
         pc.draw()
 
+    def barchart(self, ylabel=None):
+        cols, rows = self.execute()
+        lc = xpg.xtplot.BarChart(ylabel)
+        for row in rows:
+            lc.addx(row[0])
+            for c in range(1, len(cols)):
+                # print("adding ", cols[c], row[c])
+                lc.add(cols[c], row[c])
+        lc.draw()
 
 def fromQuery(conn, qry, alias=""):
     xt = XTable(conn, qry, alias) 
@@ -204,15 +203,15 @@ if __name__ == '__main__':
     t4.dotplan("/tmp/exp")
     t4.dotplan("/tmp/expa", analyze=True)
 
-    tups = [(1, 2, 'ok'), (3, 4, 'ok2')]
-    t5 = fromArray(c1, tups) 
-    print(t5.show())
-    t6 = fromArray(c1, tups, alias='tups', colnames=['i', 'j', 'k'])
-    print(t6.show())
+    # tups = [(1, 2, 'ok'), (3, 4, 'ok2')]
+    # t5 = fromArray(c1, tups) 
+    # print(t5.show())
+    # t6 = fromArray(c1, tups, alias='tups', colnames=['i', 'j', 'k'])
+    # print(t6.show())
 
-    # t5 = t1.select(select='i, j')
-    # t5.xlinechart()
-    # plt.show()
+    t5 = fromSQL(c1, "select 'i' || (i%10) as k, sum(i) as si, sum(j) as sj from t group by (i%10)") 
+    t5.barchart()
+    plt.savefig('/tmp/xtable.png')
 
     # t6 = fromQuery(c1, "select 'i', sum(i) from @t@ union all select 'j', sum(j) from @t@")
     # print(t6.show())

@@ -20,8 +20,7 @@ def _sqlconn(args):
 
 # A few env variable controls how the table is printed.
 # see tabulate doc.
-def xt2str(tt):
-	cols, res = tt.execute()
+def xt2str(cols, res):
 	tblfmt = ${...}.get('XPG_TBLFMT', 'psql')
 	stralign = ${...}.get('XPG_STRALIGN', 'left')
 	numalign = ${...}.get('XPG_NUMALIGN', 'decimal')
@@ -35,7 +34,8 @@ def _sql(args):
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
 	tt = xpg.xtable.fromQuery(xpg_db, args[0])
-	return xt2str(tt)
+	cols, res = tt.execute()
+	return xt2str(cols, res) 
 
 # Run sql, return cols and result.   This function should almost
 # for sure, not be used in subproc or macro, therefore we do not
@@ -68,7 +68,8 @@ def _pgxt(args):
 		xpg_db.rmxt(xtn[1:])
 	elif xpg_db.getxt(xtn) != None:
 		# print case.
-		return xt2str(xpg_db.getxt(xtn)) 
+		cols, res = xpg_db.getxt(xtn).execute()
+		return xt2str(cols, res) 
 	else:
 		if xtn[0] == '+':
 			xtn = xtn[1:]
@@ -116,6 +117,8 @@ def _pgxtplot(args):
 		xt.xlinechart()
 	elif mthd == 'pie':
 		xt.piechart()
+	elif mthd == 'bar':
+		xt.barchart()
 	else:
 		raise Exception('pgxtplot does not support', mthd, 'method')
 
@@ -135,6 +138,58 @@ def _pgxtexp(args):
 	else:
 		exp = xt.dotplan('/tmp/xonsh.kitty.plt')
 	icat /tmp/xonsh.kitty.plt.png
+
+@unthreadable
+def _pgxthist(args):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	tn = args[0]
+	col = args[1]
+	nbkt = int(args[2])
+
+	hist = xpg.xtable.fromQuery(xpg_db, '''
+				 , -- with
+				 xxxtmpt as (select min({0}) as tmpmin, max({0}) as tmpmax from @{1}@),
+			     xxxbkt  as (select width_bucket({0}, tmpmin, tmpmax, {2}) as bkt, 
+					                min(tmpmin) as tmpmin, max(tmpmax) as tmpmax,
+									count(*) as freq
+							        from xxxtmpt, @{1}@
+									group by bkt
+									),
+				 xxxhist as (select bkt, 
+					      (tmpmin + (tmpmax - tmpmin) * (bkt - 1) / {2})::text as lb,
+					      (tmpmin + (tmpmax - tmpmin) * bkt / {2})::text as ub,
+						  freq
+						  from xxxbkt)
+				 select ub as bktlabel, freq from xxxhist order by bkt
+			'''.format(col, tn, nbkt),
+			alias = 'pgxt_tmp_hist')
+
+	# print(hist.sql)
+	hist.barchart()
+	plt.savefig('/tmp/xonsh.kitty.plt.png')
+	icat /tmp/xonsh.kitty.plt.png
+	xpg_db.rmxt('pgxt_tmp_hist')
+
+def _pgxtctl(args):
+	global xpg_db
+	if xpg_db == None:
+		xpg_db = xpg.conn.Conn()
+
+	if args[0] == 'list':
+		kv = [(k, xpg_db.xts[k].sql[:40]) for k in xpg_db.xts.keys()]
+		return xt2str(['xtable', 'sql'], kv)
+	elif args[0] == 'rm':
+		del xpg_db.xts[args[1]]
+	elif args[0] == 'clear':
+		xpg_db.xts.clear()
+	elif args[0] == 'cleartmp':
+		ks = list(xpg_db.xts.keys())
+		for k in ks: 
+			if k[:4] == 'tmp_':
+				del xpg_db.xts[k]
 	
 aliases['pgconn'] = _sqlconn
 aliases['sql'] = _sql
@@ -143,5 +198,7 @@ aliases['pgxt'] = _pgxt
 aliases['pgxtups'] = _pgxtups
 aliases['pgxtplot'] = _pgxtplot
 aliases['pgxtexp'] = _pgxtexp
+aliases['pgxthist'] = _pgxthist
+aliases['pgxtctl'] = _pgxtctl
 
 

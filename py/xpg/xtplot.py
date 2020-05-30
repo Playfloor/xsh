@@ -1,5 +1,8 @@
+
 import matplotlib.pyplot as plt
+import numpy as np
 from graphviz import Digraph
+
 
 class SeriesAccumulator:
     def __init__(self): 
@@ -63,6 +66,42 @@ class LineChart:
         self.ax.legend(legend)
         self.fig.canvas.draw()
 
+class BarChart:
+    def __init__(self, ylabel=None, acc=None):
+        self.xvals = []
+        self.ylabel = ylabel
+        if acc == None:
+            self.acc = SeriesAccumulator()
+        else:
+            self.acc = acc
+
+    def addx(self, x):
+        self.xvals.append(x)
+
+    def add(self, series, val):
+        self.acc.add(series, val)
+
+    def draw(self):
+        fig, ax = plt.subplots(1, 1)
+        if self.ylabel != None:
+            self.ax.set_ylabel(ylabel)
+        xs = np.arange(len(self.xvals))
+        ax.set_xticks(xs)
+        ax.set_xticklabels(self.xvals)
+
+        legend = []
+        series = list(self.acc.acc.keys())
+        width = 0.5/len(series)
+
+        for iseries in range(len(series)):
+            srs = series[iseries]
+            vals = self.acc.acc[srs]
+            # print (xs, width, iseries)
+            # print (vals)
+            ax.bar(xs + (- 0.25 + width * iseries), vals, width, label=srs)
+            legend.append(srs)
+        ax.legend(legend)
+        fig.canvas.draw()
 
 class DotPlan: 
     def __init__(self, plan):
