@@ -46,5 +46,9 @@ pgxtplot xline zoo   # plot zoo, first column as x axis.
 pgxtplot pie zoo     # pie chart, first column is category, second is weight.
 pgxtexp zoo          # explain
 pgxtexp zoo analyze  # explain analyze
+pgxthist xtable col nbkt # histogram of xtable.col, in n buckets
 
 ```
+
+### pgxtctl
+list, rm, clear, cleartmp, manage the xtables.
