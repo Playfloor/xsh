@@ -125,19 +125,25 @@ def _pgxtplot(args):
 	plt.savefig('/tmp/xonsh.kitty.plt.png')
 	icat /tmp/xonsh.kitty.plt.png
 
-@unthreadable
-def _pgxtexp(args): 
+def pgexp(args, analyze):
 	global xpg_db
 	if xpg_db == None:
 		xpg_db = xpg.conn.Conn()
 
 	xtn = args[0]
 	xt = xpg_db.getxt(xtn)
-	if len(args) == 2 and args[1] == 'analyze':
-		exp = xt.dotplan('/tmp/xonsh.kitty.plt', analyze=True)
-	else:
-		exp = xt.dotplan('/tmp/xonsh.kitty.plt')
+	exp = xt.dotplan('/tmp/xonsh.kitty.plt', analyze=analyze)
 	icat /tmp/xonsh.kitty.plt.png
+
+
+@unthreadable
+def _pgxtexp(args): 
+	pgexp(args, False)
+
+@unthreadable
+def _pgxtexpanalyze(args): 
+	pgexp(args, True)
+
 
 @unthreadable
 def _pgxthist(args):
@@ -192,13 +198,15 @@ def _pgxtctl(args):
 				del xpg_db.xts[k]
 	
 aliases['pgconn'] = _sqlconn
-aliases['sql'] = _sql
-aliases['sqlexec'] = _sqlexec
-aliases['pgxt'] = _pgxt 
-aliases['pgxtups'] = _pgxtups
-aliases['pgxtplot'] = _pgxtplot
-aliases['pgxtexp'] = _pgxtexp
-aliases['pgxthist'] = _pgxthist
 aliases['pgxtctl'] = _pgxtctl
+
+aliases['s'] = _sql
+aliases['x'] = _sqlexec
+aliases['t'] = _pgxt 
+aliases['e'] = _pgxtexp
+aliases['ea'] = _pgxtexpanalyze
+aliases['tups'] = _pgxtups
+aliases['plot'] = _pgxtplot
+aliases['hist'] = _pgxthist
 
 
